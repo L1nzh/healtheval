@@ -1,0 +1,77 @@
+[
+  {
+    "personalInfo": {
+      "annotatorId": "E1547174",
+      "gender": "Male",
+      "ageGroup": "20-29",
+      "educationLevel": "Master's"
+    },
+    "evaluation": {
+      "response1": {
+        "helpfulness": 5,
+        "clarity": 5,
+        "reassurance": 5,
+        "feasibility": 5,
+        "medicalAccuracy": 5
+      },
+      "response2": {
+        "helpfulness": 1,
+        "clarity": 1,
+        "reassurance": 1,
+        "feasibility": 1,
+        "medicalAccuracy": 1
+      }
+    },
+    "timestamp": "2025-08-19T04:06:57.362Z"
+  },
+  {
+    "personalInfo": {
+      "annotatorId": "E1547174",
+      "gender": "Male",
+      "ageGroup": "20-29",
+      "educationLevel": "Master's"
+    },
+    "evaluation": {
+      "response1": {
+        "helpfulness": 4,
+        "clarity": 4,
+        "reassurance": 4,
+        "feasibility": 4,
+        "medicalAccuracy": 4
+      },
+      "response2": {
+        "helpfulness": 2,
+        "clarity": 2,
+        "reassurance": 2,
+        "feasibility": 2,
+        "medicalAccuracy": 2
+      }
+    },
+    "timestamp": "2025-08-19T04:07:21.287Z"
+  },
+  {
+    "personalInfo": {
+      "annotatorId": "admin",
+      "gender": "Male",
+      "ageGroup": "20-29",
+      "educationLevel": "Master's"
+    },
+    "evaluation": {
+      "response1": {
+        "helpfulness": 1,
+        "clarity": 1,
+        "reassurance": 1,
+        "feasibility": 1,
+        "medicalAccuracy": 1
+      },
+      "response2": {
+        "helpfulness": 1,
+        "clarity": 1,
+        "reassurance": 1,
+        "feasibility": 1,
+        "medicalAccuracy": 1
+      }
+    },
+    "timestamp": "2025-08-19T04:33:31.659Z"
+  }
+]
