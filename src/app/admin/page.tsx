@@ -1,3 +1,4 @@
+// healtheval\src\app\admin\page.tsx
 'use client';
 
 import { useApp } from '@/context/AppContext';
@@ -20,23 +21,37 @@ export default function AdminPage() {
   const [serverSubmissions, setServerSubmissions] = useState<Submission[]>([]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      const fetchSubmissions = async () => {
-        try {
-          const res = await fetch('/api/submissions');
-          if (!res.ok) {
-            throw new Error('Failed to fetch submissions');
-          }
-          const data = await res.json();
-          setServerSubmissions(data);
-        } catch (err) {
-          console.error('Error fetching submissions:', err);
-          alert('Failed to load data. Please try again.');
+    // 页面加载时检查是否已有 token（表示已登录）
+    const checkAuthStatus = async () => {
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('auth_token='))
+        ?.split('=')[1];
+
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
+
+      // 可选：快速验证 token 是否过期（简单判断 exp）
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+          // 过期
+          setIsAuthenticated(false);
+          // 可选清除 cookie
+          document.cookie = 'auth_token=; Max-Age=0; path=/;';
+          return;
         }
-      };
-      fetchSubmissions();
-    }
-  }, [isAuthenticated]);
+        setIsAuthenticated(true); //有未过期 token，自动登录
+      } catch (e) {
+        setIsAuthenticated(false);
+        console.error(e);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
