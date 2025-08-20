@@ -36,7 +36,8 @@ export async function POST(request: NextRequest) {
     // 设置 httpOnly Cookie，前端无法访问，更安全
     response.cookies.set('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // 生产环境启用 HTTPS
+      secure: false,
+      // secure: process.env.NODE_ENV === 'production', // 生产环境启用 HTTPS
       maxAge: 60 * 60 * 24 * 7, // 7天
       path: '/',
       sameSite: 'strict',
