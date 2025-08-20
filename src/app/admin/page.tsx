@@ -21,6 +21,20 @@ export default function AdminPage() {
   const [serverSubmissions, setServerSubmissions] = useState<Submission[]>([]);
 
   useEffect(() => {
+    // 页面加载时自动检查认证状态
+    const checkAuthStatus = async () => {
+      try {
+        const res = await fetch('/api/auth/status');
+        const { authenticated } = await res.json();
+        setIsAuthenticated(authenticated);
+      } catch (err) {
+        console.error('Auth status check failed:', err);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuthStatus();
+    
     if (isAuthenticated) {
       const fetchSubmissions = async () => {
         try {
