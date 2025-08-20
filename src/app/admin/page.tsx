@@ -1,28 +1,27 @@
-// healtheval\src\app\admin\page.tsx
+// healtheval/src/app/admin/page.tsx
 'use client';
 
-import { useApp } from '@/context/AppContext';
+// import { useApp } from '@/context/AppContext';
 import { convertToCSV, downloadCSV } from '@/utils/csvExporter';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Submission } from '@/types';
-
-// Simple password protection (use more secure method in production)
-// const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-// const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'healtheval';
-
+import { Spin } from 'antd'; // 引入 Ant Design Spin
+import 'antd/dist/reset.css'; // 确保 Ant Design 样式重置（v5+）
 
 export default function AdminPage() {
-  // const { submissions } = useApp(); // deprecated
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [serverSubmissions, setServerSubmissions] = useState<Submission[]>([]);
+  const [authLoading, setAuthLoading] = useState(true); // 检查认证的 loading
+  const [dataLoading, setDataLoading] = useState(false); // 加载数据的 loading
 
+  // 第一阶段：检查认证状态
   useEffect(() => {
-    // 页面加载时自动检查认证状态
     const checkAuthStatus = async () => {
+      setAuthLoading(true);
       try {
         const res = await fetch('/api/auth/status');
         const { authenticated } = await res.json();
@@ -30,13 +29,19 @@ export default function AdminPage() {
       } catch (err) {
         console.error('Auth status check failed:', err);
         setIsAuthenticated(false);
+      } finally {
+        setAuthLoading(false);
       }
     };
 
     checkAuthStatus();
-    
+  }, []);
+
+  // 第二阶段：如果已认证，加载 submissions 数据
+  useEffect(() => {
     if (isAuthenticated) {
       const fetchSubmissions = async () => {
+        setDataLoading(true);
         try {
           const res = await fetch('/api/submissions');
           if (!res.ok) {
@@ -47,8 +52,11 @@ export default function AdminPage() {
         } catch (err) {
           console.error('Error fetching submissions:', err);
           alert('Failed to load data. Please try again.');
+        } finally {
+          setDataLoading(false);
         }
       };
+
       fetchSubmissions();
     }
   }, [isAuthenticated]);
@@ -81,7 +89,6 @@ export default function AdminPage() {
     const annotators = Array.from(
       new Map(serverSubmissions.map(sub => [sub.personalInfo.annotatorId, sub.personalInfo])).values()
     );
-    
     const csv = convertToCSV(annotators);
     downloadCSV(csv, 'annotators.csv');
   };
@@ -92,9 +99,9 @@ export default function AdminPage() {
       const { annotatorId } = submission.personalInfo;
       const timestamp = submission.timestamp;
 
-      const result = {
+      return {
         annotatorId,
-        formId: formId + 1, //start from 1
+        formId: formId + 1,
         timestamp,
         response1_helpfulness: response1.helpfulness,
         response1_clarity: response1.clarity,
@@ -107,14 +114,26 @@ export default function AdminPage() {
         response2_feasibility: response2.feasibility,
         response2_medicalAccuracy: response2.medicalAccuracy,
       };
-
-      return result;
     });
 
     const csv = convertToCSV(results);
     downloadCSV(csv, 'evaluation_results.csv');
   };
 
+  // 统一 Loading 状态：只要 authLoading 或 dataLoading 为 true，就显示 Spin
+  const isLoading = authLoading || dataLoading;
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-8">
+        <Spin size="large" tip="Loading...">
+          <div style={{ padding: '50px' }} />
+        </Spin>
+      </main>
+    );
+  }
+
+  // 认证失败：显示登录页
   if (!isAuthenticated) {
     return (
       <main className="min-h-screen p-8 max-w-md mx-auto">
@@ -142,6 +161,7 @@ export default function AdminPage() {
     );
   }
 
+  // 所有数据加载完成，渲染主页面
   return (
     <main className="min-h-screen p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
