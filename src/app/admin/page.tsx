@@ -126,9 +126,7 @@ export default function AdminPage() {
   if (isLoading) {
     return (
       <main className="min-h-screen flex items-center justify-center p-8">
-        <Spin size="large" tip="Loading...">
-          <div style={{ padding: '50px' }} />
-        </Spin>
+        <p className="text-lg text-gray-600">Loading...</p>
       </main>
     );
   }
