@@ -1,3 +1,4 @@
+// src\app\page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -8,34 +9,56 @@ import Image from 'next/image';
 export default function PersonalInfoPage() {
   const router = useRouter();
   const { setPersonalInfo, submissions } = useApp();
-  const [formData, setFormData] = useState<PersonalInfo>({
-    annotatorId: '',
-    gender: null,
-    ageGroup: null,
-    educationLevel: null,
+  const [formData, setFormData] = useState<PersonalInfo>(() => {
+    // 尝试从 localStorage 读取已保存的数据
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('personalInfo');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to parse saved personal info', e);
+        }
+      }
+    }
+    // 默认值
+    return {
+      annotatorId: '',
+      gender: null,
+      ageGroup: null,
+      educationLevel: null,
+    };
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate all fields are filled
+
     if (!formData.annotatorId || !formData.gender || !formData.ageGroup || !formData.educationLevel) {
       alert('Please fill in all fields before saving.');
       return;
     }
 
+    // 保存到 context
     setPersonalInfo(formData);
+    
+    // 同时保存到 localStorage
+    localStorage.setItem('personalInfo', JSON.stringify(formData));
+
     alert('Personal information saved!');
   };
 
   const handleStart = () => {
-    // Validate all fields are filled
     if (!formData.annotatorId || !formData.gender || !formData.ageGroup || !formData.educationLevel) {
       alert('Please fill in all fields before starting.');
       return;
     }
 
+    // 保存到 context
     setPersonalInfo(formData);
+    
+    // 保存到 localStorage（即使没点 Save，Start 也算完成填写）
+    localStorage.setItem('personalInfo', JSON.stringify(formData));
+
     router.push('/evaluation');
   };
 
@@ -111,8 +134,8 @@ export default function PersonalInfoPage() {
             >
               <option value="">Select education level</option>
               <option value="High School">High School</option>
-              <option value="Bachelor's">Bachelor's</option>
-              <option value="Master's">Master's</option>
+              <option value="Bachelor's">Bachelor</option>
+              <option value="Master's">Master</option>
               <option value="PhD">PhD</option>
               <option value="Other">Other</option>
             </select>
