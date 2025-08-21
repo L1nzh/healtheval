@@ -1,7 +1,7 @@
 // src\app\page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { PersonalInfo, Gender, AgeGroup, EducationLevel } from '@/types';
@@ -9,26 +9,30 @@ import Image from 'next/image';
 export default function PersonalInfoPage() {
   const router = useRouter();
   const { setPersonalInfo, submissions } = useApp();
-  const [formData, setFormData] = useState<PersonalInfo>(() => {
-    // 尝试从 localStorage 读取已保存的数据
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('personalInfo');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error('Failed to parse saved personal info', e);
-        }
+  const [formData, setFormData] = useState<PersonalInfo>({
+    annotatorId: '',
+    gender: null,
+    ageGroup: null,
+    educationLevel: null,
+  });
+
+  // 从 localStorage 恢复数据
+  useEffect(() => {
+    const saved = localStorage.getItem('personalInfo');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setFormData({
+          annotatorId: parsed.annotatorId || '',
+          gender: parsed.gender || null,
+          ageGroup: parsed.ageGroup || null,
+          educationLevel: parsed.educationLevel || null,
+        });
+      } catch (e) {
+        console.error('Failed to parse saved personal info', e);
       }
     }
-    // 默认值
-    return {
-      annotatorId: '',
-      gender: null,
-      ageGroup: null,
-      educationLevel: null,
-    };
-  });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
