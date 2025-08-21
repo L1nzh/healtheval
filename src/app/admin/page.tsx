@@ -6,8 +6,6 @@ import { convertToCSV, downloadCSV } from '@/utils/csvExporter';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Submission } from '@/types';
-import { Spin } from 'antd'; // 引入 Ant Design Spin
-import 'antd/dist/reset.css'; // 确保 Ant Design 样式重置（v5+）
 
 export default function AdminPage() {
   const router = useRouter();

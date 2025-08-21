@@ -134,8 +134,8 @@ export default function PersonalInfoPage() {
             >
               <option value="">Select education level</option>
               <option value="High School">High School</option>
-              <option value="Bachelor's">Bachelor</option>
-              <option value="Master's">Master</option>
+              <option value="Bachelor">Bachelor</option>
+              <option value="Master">Master</option>
               <option value="PhD">PhD</option>
               <option value="Other">Other</option>
             </select>
