@@ -3,12 +3,23 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { Evaluation, EvaluationScore } from '@/types';
+import { Evaluation, EvaluationScore, Question, QuestionsResponse } from '@/types';
 
 export default function EvaluationPage() {
   const router = useRouter();
   const { personalInfo, addSubmission } = useApp();
   const [timer, setTimer] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
+  const [loading, setLoading] = useState(true);
   const [evaluation1, setEvaluation1] = useState<Evaluation>({
     helpfulness: null,
     clarity: null,
@@ -24,11 +35,48 @@ export default function EvaluationPage() {
     medicalAccuracy: null,
   });
 
+  const fetchQuestions = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/questions?page=${page}&limit=10`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch questions');
+      }
+      const data: QuestionsResponse = await response.json();
+      setQuestions(data.questions);
+      setPagination(data.pagination);
+      setCurrentPage(page);
+      setCurrentQuestionIndex(0);
+      // Reset evaluations when loading new questions
+      setEvaluation1({
+        helpfulness: null,
+        clarity: null,
+        reassurance: null,
+        feasibility: null,
+        medicalAccuracy: null,
+      });
+      setEvaluation2({
+        helpfulness: null,
+        clarity: null,
+        reassurance: null,
+        feasibility: null,
+        medicalAccuracy: null,
+      });
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      alert('Failed to load questions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!personalInfo) {
       router.push('/');
       return;
     }
+
+    fetchQuestions(1);
 
     const interval = setInterval(() => {
       setTimer((prev) => prev + 1);
@@ -101,6 +149,24 @@ export default function EvaluationPage() {
     </div>
   );
 
+  if (loading) {
+    return (
+      <main className="min-h-screen p-8 max-w-7xl mx-auto flex items-center justify-center">
+        <div className="text-xl">Loading questions...</div>
+      </main>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <main className="min-h-screen p-8 max-w-7xl mx-auto flex items-center justify-center">
+        <div className="text-xl">No questions available.</div>
+      </main>
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+
   return (
     <main className="min-h-screen p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -114,22 +180,24 @@ export default function EvaluationPage() {
         <section className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Summarized Context</h2>
           <p className="text-gray-700">
-            The patient has been newly diagnosed with diabetes and is discussing starting insulin treatment with the doctor.
+            {currentQuestion.summarizedContext}
           </p>
         </section>
 
         <section className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Dialogue Chunk</h2>
           <div className="space-y-4">
-            <p className="text-gray-700"><strong>Patient:</strong> Do I really need to start insulin now? Can't I just try other medications first？</p>
-            <p className="text-gray-700"><strong>Doctor:</strong> Insulin is necessary at this stage to control your blood sugar levels effectively. Other medications may not work as well in your case. </p>
-            <p className="text-gray-700"><strong>Patient:</strong> I'm worried that once I start insulin, I'll have to use it for the rest of my life. </p>
+            {currentQuestion.dialogueChunk.map((dialogue, index) => (
+              <p key={index} className="text-gray-700">
+                <strong>{dialogue.speaker}:</strong> {dialogue.text}
+              </p>
+            ))}
           </div>
         </section>
 
         <section className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Detected Concern Type</h2>
-          <p className="text-gray-700">Lifestyle Adaptations</p>
+          <p className="text-gray-700">{currentQuestion.concernType}</p>
         </section>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -138,7 +206,7 @@ export default function EvaluationPage() {
             <section className="bg-gray-50 p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">Doctor Response 1</h2>
               <p className="text-gray-700">
-                It's natural to feel hesitant about starting insulin. Many patients worry about long-term commitment, but insulin is often introduced to stabilize blood sugar levels when other options might not be sufficient. Once your levels are well-controlled, we can reassess whether other treatments could be an option for you. Think of insulin as a temporary tool to help your body adjust and avoid complications. You won't necessarily need it for life, and we'll work together to explore all available options as your condition improves.
+                {currentQuestion.doctorResponse1}
               </p>
             </section>
 
@@ -160,7 +228,7 @@ export default function EvaluationPage() {
             <section className="bg-gray-50 p-6 rounded-lg">
               <h2 className="text-xl font-semibold mb-4">Doctor Response 2</h2>
               <p className="text-gray-700">
-                While insulin might seem daunting, it's actually a very effective treatment option. Your blood sugar levels indicate that we need to take action now to prevent complications. We can start with a low dose and adjust as needed. 
+                {currentQuestion.doctorResponse2}
               </p>
             </section>
 
@@ -175,6 +243,103 @@ export default function EvaluationPage() {
               {renderRatingOptions('feasibility', 'Feasibility', 'Is the response practical?', evaluation2, setEvaluation2)}
               {renderRatingOptions('medicalAccuracy', 'Medical Accuracy', 'Is the response medically accurate?', evaluation2, setEvaluation2)}
             </form>
+          </div>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center bg-gray-50 p-6 rounded-lg">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => fetchQuestions(currentPage - 1)}
+              disabled={!pagination.hasPrev}
+              className={`px-4 py-2 rounded ${
+                pagination.hasPrev 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Previous Page
+            </button>
+            <span className="text-gray-700">
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <button
+              onClick={() => fetchQuestions(currentPage + 1)}
+              disabled={!pagination.hasNext}
+              className={`px-4 py-2 rounded ${
+                pagination.hasNext 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Next Page
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {questions.length > 1 && (
+              <>
+                <button
+                  onClick={() => {
+                    setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
+                    // Reset evaluations when changing questions
+                    setEvaluation1({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                    setEvaluation2({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                  }}
+                  disabled={currentQuestionIndex === 0}
+                  className={`px-4 py-2 rounded ${
+                    currentQuestionIndex > 0 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  Previous Question
+                </button>
+                <span className="text-gray-700">
+                  Question {currentQuestionIndex + 1} of {questions.length}
+                </span>
+                <button
+                  onClick={() => {
+                    setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
+                    // Reset evaluations when changing questions
+                    setEvaluation1({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                    setEvaluation2({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                  }}
+                  disabled={currentQuestionIndex === questions.length - 1}
+                  className={`px-4 py-2 rounded ${
+                    currentQuestionIndex < questions.length - 1 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  Next Question
+                </button>
+              </>
+            )}
           </div>
         </div>
 

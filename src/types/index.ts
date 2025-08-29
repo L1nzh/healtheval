@@ -8,6 +8,31 @@ export type EducationLevel = 'High School' | "Bachelor's" | "Master's" | 'PhD' |
 
 export type EvaluationScore = 1 | 2 | 3 | 4 | 5 | null;
 
+// Database question structure matching annotation_db.questions
+export interface Question {
+  _id: string;
+  summarizedContext: string;
+  dialogueChunk: Array<{
+    speaker: string;
+    text: string;
+  }>;
+  concernType: string;
+  doctorResponse1: string;
+  doctorResponse2: string;
+}
+
+// API response for paginated questions
+export interface QuestionsResponse {
+  questions: Question[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 // 表示一条待评估的医患对话及其两个回复
 export interface EvaluationItem {
   _id: string; // MongoDB 自动生成的 ID
