@@ -142,29 +142,8 @@ export default function EvaluationPage() {
       setAnsweredQuestionIds(prev => new Set(prev).add(currentQuestion._id));
     }
 
-    // Move to next question or return home
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      // Reset evaluations
-      setEvaluation1({
-        helpfulness: null,
-        clarity: null,
-        reassurance: null,
-        feasibility: null,
-        medicalAccuracy: null,
-      });
-      setEvaluation2({
-        helpfulness: null,
-        clarity: null,
-        reassurance: null,
-        feasibility: null,
-        medicalAccuracy: null,
-      });
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      router.push('/');
-    }
+    // Only called on final question, so always go home
+    router.push('/');
   };
 
   const renderRatingOptions = (
@@ -361,14 +340,85 @@ export default function EvaluationPage() {
         </div>
 
 
-        <div className="flex justify-center">
-          <button
-            onClick={handleSubmit}
-            className="px-8 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-lg"
-          >
-            {currentQuestionIndex < questions.length - 1 ? 'Submit & Next Question' : 'Submit & Finish'}
-          </button>
-        </div>
+        {/* Navigation/Submit Controls */}
+        {currentQuestionIndex < questions.length - 1 ? (
+          // Navigation buttons for non-final questions (same as top)
+          <div className="flex justify-center items-center bg-blue-50 p-4 rounded-lg gap-4">
+            <button
+              onClick={() => {
+                setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
+                // Reset evaluations when changing questions
+                setEvaluation1({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                setEvaluation2({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentQuestionIndex === 0}
+              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+                currentQuestionIndex > 0 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              ⬅ Previous Question
+            </button>
+            <span className="text-gray-700 text-sm font-medium">
+              Question {currentQuestionIndex + 1} of {questions.length}
+            </span>
+            <button
+              onClick={() => {
+                setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
+                // Reset evaluations when changing questions
+                setEvaluation1({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                setEvaluation2({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentQuestionIndex === questions.length - 1}
+              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+                currentQuestionIndex < questions.length - 1 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Next Question ➡
+            </button>
+          </div>
+        ) : (
+          // Submit button only for the final question
+          <div className="flex justify-center">
+            <button
+              onClick={handleSubmit}
+              className="px-8 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-lg"
+            >
+              Submit & Finish
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );
