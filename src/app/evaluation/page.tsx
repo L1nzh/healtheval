@@ -21,6 +21,10 @@ export default function EvaluationPage() {
   });
   const [loading, setLoading] = useState(true);
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
+  // Store evaluations for all questions: questionId -> { response1: Evaluation, response2: Evaluation }
+  const [allEvaluations, setAllEvaluations] = useState<Record<string, { response1: Evaluation, response2: Evaluation }>>({});
+  
+  // Current question's evaluations (for display)
   const [evaluation1, setEvaluation1] = useState<Evaluation>({
     helpfulness: null,
     clarity: null,
@@ -85,6 +89,11 @@ export default function EvaluationPage() {
     return () => clearInterval(interval);
   }, [personalInfo, router]);
 
+  // Load evaluations when question changes
+  useEffect(() => {
+    loadCurrentEvaluations();
+  }, [currentQuestionIndex, questions, allEvaluations]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -105,6 +114,49 @@ export default function EvaluationPage() {
     }
   };
 
+  // Save current evaluations before switching questions
+  const saveCurrentEvaluations = () => {
+    if (questions.length > 0) {
+      const currentQuestion = questions[currentQuestionIndex];
+      setAllEvaluations(prev => ({
+        ...prev,
+        [currentQuestion._id]: {
+          response1: evaluation1,
+          response2: evaluation2
+        }
+      }));
+    }
+  };
+
+  // Load evaluations for the current question
+  const loadCurrentEvaluations = () => {
+    if (questions.length > 0) {
+      const currentQuestion = questions[currentQuestionIndex];
+      const savedEvaluations = allEvaluations[currentQuestion._id];
+      
+      if (savedEvaluations) {
+        setEvaluation1(savedEvaluations.response1);
+        setEvaluation2(savedEvaluations.response2);
+      } else {
+        // Reset to empty state for new question
+        setEvaluation1({
+          helpfulness: null,
+          clarity: null,
+          reassurance: null,
+          feasibility: null,
+          medicalAccuracy: null,
+        });
+        setEvaluation2({
+          helpfulness: null,
+          clarity: null,
+          reassurance: null,
+          feasibility: null,
+          medicalAccuracy: null,
+        });
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -113,37 +165,60 @@ export default function EvaluationPage() {
       return;
     }
 
-    // Check if all scores are selected for both evaluations
-    const allScoresSelected1 = Object.values(evaluation1).every(score => score !== null);
-    const allScoresSelected2 = Object.values(evaluation2).every(score => score !== null);
-    
-    if (!allScoresSelected1 || !allScoresSelected2) {
-      alert('Please rate all criteria for both responses before submitting.');
-      return;
-    }
+    // Save current evaluations before submission
+    saveCurrentEvaluations();
 
-    const currentQuestion = questions[currentQuestionIndex];
-    const submission = {
-      personalInfo,
-      questionId: currentQuestion._id,
-      evaluation: {
-        response1: evaluation1,
-        response2: evaluation2
-      },
-      timestamp: new Date().toISOString(),
-    };
+    // Wait a moment for state to update, then check all evaluations
+    setTimeout(async () => {
+      // Get the latest evaluations including the just-saved current one
+      const currentQuestion = questions[currentQuestionIndex];
+      const finalEvaluations = {
+        ...allEvaluations,
+        [currentQuestion._id]: {
+          response1: evaluation1,
+          response2: evaluation2
+        }
+      };
 
-    console.log('Submission:', submission);
-    addSubmission(submission);
+      // Check if all questions have been evaluated
+      const unevaluatedQuestions = questions.filter(question => {
+        const questionEvaluation = finalEvaluations[question._id];
+        if (!questionEvaluation) return true;
+        
+        const response1Complete = Object.values(questionEvaluation.response1).every(score => score !== null);
+        const response2Complete = Object.values(questionEvaluation.response2).every(score => score !== null);
+        
+        return !response1Complete || !response2Complete;
+      });
 
-    // Update answered times for this question
-    if (!answeredQuestionIds.has(currentQuestion._id)) {
-      await updateAnsweredTimes(currentQuestion._id);
-      setAnsweredQuestionIds(prev => new Set(prev).add(currentQuestion._id));
-    }
+      if (unevaluatedQuestions.length > 0) {
+        alert(`Please complete evaluations for all questions. Missing evaluations for ${unevaluatedQuestions.length} question(s).`);
+        return;
+      }
 
-    // Only called on final question, so always go home
-    router.push('/');
+      // Create submissions for all questions
+      const submissions = questions.map(question => ({
+        personalInfo,
+        questionId: question._id,
+        evaluation: finalEvaluations[question._id],
+        timestamp: new Date().toISOString(),
+      }));
+
+      console.log('All submissions:', submissions);
+      
+      // Add all submissions
+      submissions.forEach(submission => addSubmission(submission));
+
+      // Update answered times for all questions
+      for (const question of questions) {
+        if (!answeredQuestionIds.has(question._id)) {
+          await updateAnsweredTimes(question._id);
+        }
+      }
+
+      // Go home after all submissions
+      router.push('/');
+    }, 100);
   };
 
   const renderRatingOptions = (
@@ -206,22 +281,8 @@ export default function EvaluationPage() {
           <div className="flex flex-col sm:flex-row justify-center items-center bg-blue-50 p-3 rounded-lg gap-2 sm:gap-4">
             <button
               onClick={() => {
+                saveCurrentEvaluations();
                 setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
-                // Reset evaluations when changing questions
-                setEvaluation1({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
-                setEvaluation2({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
@@ -239,22 +300,8 @@ export default function EvaluationPage() {
             </span>
             <button
               onClick={() => {
+                saveCurrentEvaluations();
                 setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
-                // Reset evaluations when changing questions
-                setEvaluation1({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
-                setEvaluation2({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
@@ -346,22 +393,8 @@ export default function EvaluationPage() {
           <div className="flex flex-col sm:flex-row justify-center items-center bg-blue-50 p-3 rounded-lg gap-2 sm:gap-4">
             <button
               onClick={() => {
+                saveCurrentEvaluations();
                 setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
-                // Reset evaluations when changing questions
-                setEvaluation1({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
-                setEvaluation2({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
@@ -379,22 +412,8 @@ export default function EvaluationPage() {
             </span>
             <button
               onClick={() => {
+                saveCurrentEvaluations();
                 setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
-                // Reset evaluations when changing questions
-                setEvaluation1({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
-                setEvaluation2({
-                  helpfulness: null,
-                  clarity: null,
-                  reassurance: null,
-                  feasibility: null,
-                  medicalAccuracy: null,
-                });
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}

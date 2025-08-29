@@ -34,18 +34,6 @@ export interface QuestionsResponse {
   };
 }
 
-// 表示一条待评估的医患对话及其两个回复
-export interface EvaluationItem {
-  _id: string; // MongoDB 自动生成的 ID
-  context: string;
-  dialogue: string[];
-  concernType: string;
-  responses: {
-    response1: string;
-    response2: string;
-  };
-  answeredTimes: number;
-}
 
 // 用户填写的个人信息
 export interface PersonalInfo {
