@@ -20,6 +20,7 @@ export default function EvaluationPage() {
     hasPrev: false,
   });
   const [loading, setLoading] = useState(true);
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<Set<string>>(new Set());
   const [evaluation1, setEvaluation1] = useState<Evaluation>({
     helpfulness: null,
     clarity: null,
@@ -35,17 +36,16 @@ export default function EvaluationPage() {
     medicalAccuracy: null,
   });
 
-  const fetchQuestions = async (page: number = 1) => {
+  const fetchQuestions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/questions?page=${page}&limit=10`);
+      const response = await fetch(`/api/questions?limit=3`);
       if (!response.ok) {
         throw new Error('Failed to fetch questions');
       }
       const data: QuestionsResponse = await response.json();
       setQuestions(data.questions);
       setPagination(data.pagination);
-      setCurrentPage(page);
       setCurrentQuestionIndex(0);
       // Reset evaluations when loading new questions
       setEvaluation1({
@@ -76,7 +76,7 @@ export default function EvaluationPage() {
       return;
     }
 
-    fetchQuestions(1);
+    fetchQuestions();
 
     const interval = setInterval(() => {
       setTimer((prev) => prev + 1);
@@ -91,7 +91,21 @@ export default function EvaluationPage() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const updateAnsweredTimes = async (questionId: string) => {
+    try {
+      await fetch('/api/questions', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ questionId }),
+      });
+    } catch (error) {
+      console.error('Error updating answered times:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!personalInfo) {
@@ -108,8 +122,10 @@ export default function EvaluationPage() {
       return;
     }
 
+    const currentQuestion = questions[currentQuestionIndex];
     const submission = {
       personalInfo,
+      questionId: currentQuestion._id,
       evaluation: {
         response1: evaluation1,
         response2: evaluation2
@@ -119,7 +135,36 @@ export default function EvaluationPage() {
 
     console.log('Submission:', submission);
     addSubmission(submission);
-    router.push('/');
+
+    // Update answered times for this question
+    if (!answeredQuestionIds.has(currentQuestion._id)) {
+      await updateAnsweredTimes(currentQuestion._id);
+      setAnsweredQuestionIds(prev => new Set(prev).add(currentQuestion._id));
+    }
+
+    // Move to next question or return home
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      // Reset evaluations
+      setEvaluation1({
+        helpfulness: null,
+        clarity: null,
+        reassurance: null,
+        feasibility: null,
+        medicalAccuracy: null,
+      });
+      setEvaluation2({
+        helpfulness: null,
+        clarity: null,
+        reassurance: null,
+        feasibility: null,
+        medicalAccuracy: null,
+      });
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      router.push('/');
+    }
   };
 
   const renderRatingOptions = (
@@ -177,106 +222,74 @@ export default function EvaluationPage() {
       </div>
 
       <div className="space-y-8">
-        {/* Top Pagination Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-blue-50 p-4 rounded-lg gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+        {/* Question Navigation */}
+        {questions.length > 1 && (
+          <div className="flex justify-center items-center bg-blue-50 p-4 rounded-lg gap-4">
             <button
-              onClick={() => fetchQuestions(currentPage - 1)}
-              disabled={!pagination.hasPrev}
+              onClick={() => {
+                setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
+                // Reset evaluations when changing questions
+                setEvaluation1({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                setEvaluation2({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentQuestionIndex === 0}
               className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                pagination.hasPrev 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                currentQuestionIndex > 0 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              ← Previous Page
+              ⬅ Previous Question
             </button>
-            <span className="text-gray-700 text-sm">
-              Page {pagination.currentPage} of {pagination.totalPages}
+            <span className="text-gray-700 text-sm font-medium">
+              Question {currentQuestionIndex + 1} of {questions.length}
             </span>
             <button
-              onClick={() => fetchQuestions(currentPage + 1)}
-              disabled={!pagination.hasNext}
+              onClick={() => {
+                setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
+                // Reset evaluations when changing questions
+                setEvaluation1({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                setEvaluation2({
+                  helpfulness: null,
+                  clarity: null,
+                  reassurance: null,
+                  feasibility: null,
+                  medicalAccuracy: null,
+                });
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentQuestionIndex === questions.length - 1}
               className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                pagination.hasNext 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                currentQuestionIndex < questions.length - 1 
+                  ? 'bg-green-500 text-white hover:bg-green-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Next Page →
+              Next Question ➡
             </button>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-            {questions.length > 1 && (
-              <>
-                <button
-                  onClick={() => {
-                    setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
-                    // Reset evaluations when changing questions
-                    setEvaluation1({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    setEvaluation2({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    // Scroll to top
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentQuestionIndex === 0}
-                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                    currentQuestionIndex > 0 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  ← Previous Q
-                </button>
-                <span className="text-gray-700 text-sm">
-                  Q {currentQuestionIndex + 1} of {questions.length}
-                </span>
-                <button
-                  onClick={() => {
-                    setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
-                    // Reset evaluations when changing questions
-                    setEvaluation1({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    setEvaluation2({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    // Scroll to top
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentQuestionIndex === questions.length - 1}
-                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                    currentQuestionIndex < questions.length - 1 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Next Q →
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        )}
 
         <section className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Summarized Context</h2>
@@ -347,113 +360,13 @@ export default function EvaluationPage() {
           </div>
         </div>
 
-        {/* Bottom Pagination Controls */}
-        <div className="flex flex-col sm:flex-row justify-between items-center bg-gray-50 p-4 rounded-lg gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-            <button
-              onClick={() => fetchQuestions(currentPage - 1)}
-              disabled={!pagination.hasPrev}
-              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                pagination.hasPrev 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              ← Previous Page
-            </button>
-            <span className="text-gray-700 text-sm">
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </span>
-            <button
-              onClick={() => fetchQuestions(currentPage + 1)}
-              disabled={!pagination.hasNext}
-              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                pagination.hasNext 
-                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Next Page →
-            </button>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
-            {questions.length > 1 && (
-              <>
-                <button
-                  onClick={() => {
-                    setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
-                    // Reset evaluations when changing questions
-                    setEvaluation1({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    setEvaluation2({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    // Scroll to top
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentQuestionIndex === 0}
-                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                    currentQuestionIndex > 0 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  ← Previous Q
-                </button>
-                <span className="text-gray-700 text-sm">
-                  Q {currentQuestionIndex + 1} of {questions.length}
-                </span>
-                <button
-                  onClick={() => {
-                    setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
-                    // Reset evaluations when changing questions
-                    setEvaluation1({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    setEvaluation2({
-                      helpfulness: null,
-                      clarity: null,
-                      reassurance: null,
-                      feasibility: null,
-                      medicalAccuracy: null,
-                    });
-                    // Scroll to top
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={currentQuestionIndex === questions.length - 1}
-                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
-                    currentQuestionIndex < questions.length - 1 
-                      ? 'bg-green-500 text-white hover:bg-green-600' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Next Q →
-                </button>
-              </>
-            )}
-          </div>
-        </div>
 
         <div className="flex justify-center">
           <button
             onClick={handleSubmit}
             className="px-8 py-3 bg-blue-500 text-white rounded hover:bg-blue-600 text-lg"
           >
-            Submit
+            {currentQuestionIndex < questions.length - 1 ? 'Submit & Next Question' : 'Submit & Finish'}
           </button>
         </div>
       </div>

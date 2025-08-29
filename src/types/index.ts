@@ -19,6 +19,7 @@ export interface Question {
   concernType: string;
   doctorResponse1: string;
   doctorResponse2: string;
+  answeredTimes: number;
 }
 
 // API response for paginated questions
