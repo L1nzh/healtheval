@@ -10,15 +10,28 @@ export async function GET(request: NextRequest) {
     const collection = await getCollection('questions');
     
     // Get questions with answeredTimes <= 3, randomly selected
+    // Handle both string and number formats for answeredTimes
     const questions = await collection
       .aggregate([
-        { $match: { answeredTimes: { $lte: 3 } } },
+        { 
+          $match: { 
+            $or: [
+              { answeredTimes: { $lte: 3 } },
+              { answeredTimes: { $in: ["0", "1", "2", "3"] } }
+            ]
+          } 
+        },
         { $sample: { size: limit } }
       ])
       .toArray();
 
     // Get total count of eligible questions for metadata
-    const totalCount = await collection.countDocuments({ answeredTimes: { $lte: 3 } });
+    const totalCount = await collection.countDocuments({
+      $or: [
+        { answeredTimes: { $lte: 3 } },
+        { answeredTimes: { $in: ["0", "1", "2", "3"] } }
+      ]
+    });
 
     return NextResponse.json({
       questions,
@@ -54,10 +67,28 @@ export async function PATCH(request: NextRequest) {
 
     const collection = await getCollection('questions');
     
-    // Increment answeredTimes by 1
+    // First, get the current document to check the data type
+    const currentDoc = await collection.findOne({ _id: new ObjectId(questionId) });
+    
+    if (!currentDoc) {
+      return NextResponse.json(
+        { error: 'Question not found' },
+        { status: 404 }
+      );
+    }
+
+    // Convert string answeredTimes to number if needed, then increment
+    let updateOperation;
+    if (typeof currentDoc.answeredTimes === 'string') {
+      const currentCount = parseInt(currentDoc.answeredTimes) || 0;
+      updateOperation = { $set: { answeredTimes: currentCount + 1 } };
+    } else {
+      updateOperation = { $inc: { answeredTimes: 1 } };
+    }
+
     const result = await collection.updateOne(
       { _id: new ObjectId(questionId) },
-      { $inc: { answeredTimes: 1 } }
+      updateOperation
     );
 
     if (result.matchedCount === 0) {
