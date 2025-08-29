@@ -18,7 +18,8 @@ These files MUST be present and referenced in every conversation:
 
 ### Code Standards
 - Use TypeScript interfaces for all data types
-- no need to expand too much content, complete the task with as concise code as possible
+- Write concise, focused code without unnecessary expansion
+- Prioritize functionality over verbose implementations
 
 ### Security Requirements
 - JWT tokens stored in httpOnly cookies
