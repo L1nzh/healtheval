@@ -203,7 +203,7 @@ export default function EvaluationPage() {
       <div className="space-y-8">
         {/* Question Navigation */}
         {questions.length > 1 && (
-          <div className="flex justify-center items-center bg-blue-50 p-4 rounded-lg gap-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center bg-blue-50 p-3 rounded-lg gap-2 sm:gap-4">
             <button
               onClick={() => {
                 setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
@@ -226,15 +226,15 @@ export default function EvaluationPage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={currentQuestionIndex === 0}
-              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+              className={`px-2 py-1 text-xs sm:px-3 sm:py-2 sm:text-sm rounded whitespace-nowrap w-full sm:w-auto ${
                 currentQuestionIndex > 0 
                   ? 'bg-green-500 text-white hover:bg-green-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              ⬅ Previous Question
+              ⬅ Previous Q
             </button>
-            <span className="text-gray-700 text-sm font-medium">
+            <span className="text-gray-700 text-xs sm:text-sm font-medium text-center">
               Question {currentQuestionIndex + 1} of {questions.length}
             </span>
             <button
@@ -259,13 +259,13 @@ export default function EvaluationPage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={currentQuestionIndex === questions.length - 1}
-              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+              className={`px-2 py-1 text-xs sm:px-3 sm:py-2 sm:text-sm rounded whitespace-nowrap w-full sm:w-auto ${
                 currentQuestionIndex < questions.length - 1 
                   ? 'bg-green-500 text-white hover:bg-green-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Next Question ➡
+              Next Q ➡
             </button>
           </div>
         )}
@@ -343,7 +343,7 @@ export default function EvaluationPage() {
         {/* Navigation/Submit Controls */}
         {currentQuestionIndex < questions.length - 1 ? (
           // Navigation buttons for non-final questions (same as top)
-          <div className="flex justify-center items-center bg-blue-50 p-4 rounded-lg gap-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center bg-blue-50 p-3 rounded-lg gap-2 sm:gap-4">
             <button
               onClick={() => {
                 setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
@@ -366,15 +366,15 @@ export default function EvaluationPage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={currentQuestionIndex === 0}
-              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+              className={`px-2 py-1 text-xs sm:px-3 sm:py-2 sm:text-sm rounded whitespace-nowrap w-full sm:w-auto ${
                 currentQuestionIndex > 0 
                   ? 'bg-green-500 text-white hover:bg-green-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              ⬅ Previous Question
+              ⬅ Previous Q
             </button>
-            <span className="text-gray-700 text-sm font-medium">
+            <span className="text-gray-700 text-xs sm:text-sm font-medium text-center">
               Question {currentQuestionIndex + 1} of {questions.length}
             </span>
             <button
@@ -399,13 +399,13 @@ export default function EvaluationPage() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               disabled={currentQuestionIndex === questions.length - 1}
-              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+              className={`px-2 py-1 text-xs sm:px-3 sm:py-2 sm:text-sm rounded whitespace-nowrap w-full sm:w-auto ${
                 currentQuestionIndex < questions.length - 1 
                   ? 'bg-green-500 text-white hover:bg-green-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Next Question ➡
+              Next Q ➡
             </button>
           </div>
         ) : (
