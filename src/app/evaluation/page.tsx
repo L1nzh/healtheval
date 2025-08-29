@@ -177,6 +177,107 @@ export default function EvaluationPage() {
       </div>
 
       <div className="space-y-8">
+        {/* Top Pagination Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-blue-50 p-4 rounded-lg gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <button
+              onClick={() => fetchQuestions(currentPage - 1)}
+              disabled={!pagination.hasPrev}
+              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+                pagination.hasPrev 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              ← Previous Page
+            </button>
+            <span className="text-gray-700 text-sm">
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <button
+              onClick={() => fetchQuestions(currentPage + 1)}
+              disabled={!pagination.hasNext}
+              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+                pagination.hasNext 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Next Page →
+            </button>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            {questions.length > 1 && (
+              <>
+                <button
+                  onClick={() => {
+                    setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
+                    // Reset evaluations when changing questions
+                    setEvaluation1({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                    setEvaluation2({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentQuestionIndex === 0}
+                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+                    currentQuestionIndex > 0 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  ← Previous Q
+                </button>
+                <span className="text-gray-700 text-sm">
+                  Q {currentQuestionIndex + 1} of {questions.length}
+                </span>
+                <button
+                  onClick={() => {
+                    setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1));
+                    // Reset evaluations when changing questions
+                    setEvaluation1({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                    setEvaluation2({
+                      helpfulness: null,
+                      clarity: null,
+                      reassurance: null,
+                      feasibility: null,
+                      medicalAccuracy: null,
+                    });
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentQuestionIndex === questions.length - 1}
+                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
+                    currentQuestionIndex < questions.length - 1 
+                      ? 'bg-green-500 text-white hover:bg-green-600' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  Next Q →
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
         <section className="bg-gray-50 p-6 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Summarized Context</h2>
           <p className="text-gray-700">
@@ -246,37 +347,37 @@ export default function EvaluationPage() {
           </div>
         </div>
 
-        {/* Pagination Controls */}
-        <div className="flex justify-between items-center bg-gray-50 p-6 rounded-lg">
-          <div className="flex items-center space-x-4">
+        {/* Bottom Pagination Controls */}
+        <div className="flex flex-col sm:flex-row justify-between items-center bg-gray-50 p-4 rounded-lg gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <button
               onClick={() => fetchQuestions(currentPage - 1)}
               disabled={!pagination.hasPrev}
-              className={`px-4 py-2 rounded ${
+              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
                 pagination.hasPrev 
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Previous Page
+              ← Previous Page
             </button>
-            <span className="text-gray-700">
+            <span className="text-gray-700 text-sm">
               Page {pagination.currentPage} of {pagination.totalPages}
             </span>
             <button
               onClick={() => fetchQuestions(currentPage + 1)}
               disabled={!pagination.hasNext}
-              className={`px-4 py-2 rounded ${
+              className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
                 pagination.hasNext 
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Next Page
+              Next Page →
             </button>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             {questions.length > 1 && (
               <>
                 <button
@@ -297,18 +398,20 @@ export default function EvaluationPage() {
                       feasibility: null,
                       medicalAccuracy: null,
                     });
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   disabled={currentQuestionIndex === 0}
-                  className={`px-4 py-2 rounded ${
+                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
                     currentQuestionIndex > 0 
                       ? 'bg-green-500 text-white hover:bg-green-600' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  Previous Question
+                  ← Previous Q
                 </button>
-                <span className="text-gray-700">
-                  Question {currentQuestionIndex + 1} of {questions.length}
+                <span className="text-gray-700 text-sm">
+                  Q {currentQuestionIndex + 1} of {questions.length}
                 </span>
                 <button
                   onClick={() => {
@@ -328,15 +431,17 @@ export default function EvaluationPage() {
                       feasibility: null,
                       medicalAccuracy: null,
                     });
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   disabled={currentQuestionIndex === questions.length - 1}
-                  className={`px-4 py-2 rounded ${
+                  className={`px-3 py-2 text-sm rounded whitespace-nowrap ${
                     currentQuestionIndex < questions.length - 1 
                       ? 'bg-green-500 text-white hover:bg-green-600' 
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  Next Question
+                  Next Q →
                 </button>
               </>
             )}
