@@ -55,8 +55,53 @@ MONGODB_URI=mongodb+srv://LINZHENGHONG:LINZHENGHONG@healtheval.zngmo6y.mongodb.n
 MONGODB_DB=annotation_db
 ```
 
+## Database Pagination Rules
+
+### Implementation Standards
+1. **API Endpoints**: Use consistent query parameters
+   - `page`: Page number (default: 1)
+   - `limit`: Items per page (default: 10, max: 50)
+
+2. **Response Format**: Always include pagination metadata
+   ```typescript
+   {
+     data: T[],
+     pagination: {
+       currentPage: number,
+       totalPages: number,
+       totalCount: number,
+       hasNext: boolean,
+       hasPrev: boolean
+     }
+   }
+   ```
+
+3. **Frontend State Management**
+   - Use separate state for current page and page data
+   - Implement loading states during data fetching
+   - Reset form data when navigating between items
+   - Handle empty states gracefully
+
+4. **Navigation Controls**
+   - Page-level: Navigate between database pages
+   - Item-level: Browse items within current page
+   - Disable buttons appropriately based on boundaries
+   - Show current position indicators
+
+5. **Error Handling**
+   - Network failures should show user-friendly messages
+   - Invalid page numbers should redirect to page 1
+   - Empty results should display appropriate messaging
+
+6. **Performance Considerations**
+   - Use MongoDB skip/limit for server-side pagination
+   - Avoid fetching all data and paginating client-side
+   - Consider caching for frequently accessed pages
+
 ## Code Review Checklist
 - [ ] TypeScript errors resolved
 - [ ] Error handling implemented
 - [ ] Loading states added
+- [ ] Pagination controls functional
+- [ ] Database queries optimized
 - [ ] Documentation updated
